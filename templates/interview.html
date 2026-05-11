@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Interview Round{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="progress-row">
+        <p class="eyebrow">Candidate: {{ session_row["candidate_name"] }}</p>
+        <p class="progress-chip">Question {{ q_index + 1 }} / {{ total_questions }}</p>
+    </div>
+    <h2>{{ question["round_type"] | upper }} ROUND</h2>
+    <p class="question-text">{{ question["text"] }}</p>
+    <p class="topic-chip">Topic: {{ question["topic"] }}</p>
+</section>
+
+<section class="panel">
+    <form method="post" action="{{ url_for('main.submit_answer', session_id=session_id, q_index=q_index) }}" id="answerForm">
+        <label>
+            Your Answer
+            <textarea
+                name="answer_text"
+                id="answerInput"
+                rows="9"
+                placeholder="Type your answer or use Voice Input below..."
+                required
+            ></textarea>
+        </label>
+
+        <input type="hidden" id="typingWpm" name="typing_wpm" value="0">
+
+        <div class="controls-row">
+            <button type="button" id="voiceBtn" class="btn-secondary">Start Voice Input</button>
+            <p class="metric-label">Typing speed: <strong id="wpmLabel">0</strong> WPM</p>
+            <p class="metric-label">Live words: <strong id="wordLabel">0</strong></p>
+        </div>
+
+        <button type="submit" class="btn-primary">Submit and Continue</button>
+    </form>
+</section>
+<script src="{{ url_for('static', filename='js/interview.js') }}"></script>
+{% endblock %}

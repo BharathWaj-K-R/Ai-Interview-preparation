@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Start Mock Interview{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="hero-card">
+        <p class="eyebrow">Placement Ready Practice</p>
+        <h1>Mock Interviews with AI Feedback That Feels Real</h1>
+        <p class="subtitle">
+            Practice technical and HR rounds, answer by text or voice, and get instant insights on confidence,
+            sentiment, speed, and weak topics.
+        </p>
+    </div>
+</section>
+
+<section class="panel">
+    <h2>Start Interview Session</h2>
+    <form method="post" action="{{ url_for('main.start_interview') }}" class="form-grid">
+        <label>
+            Candidate Name
+            <input type="text" name="candidate_name" placeholder="Enter your name" required>
+        </label>
+
+        <label>
+            Interview Round
+            <select name="round_type" required>
+                <option value="both" selected>Technical + HR (Mixed)</option>
+                <option value="technical">Technical Only</option>
+                <option value="hr">HR Only</option>
+            </select>
+        </label>
+
+        <label class="full-width">
+            Resume Text (Optional)
+            <textarea
+                name="resume_text"
+                rows="7"
+                placeholder="Paste your resume summary, skills, projects, and experience. Questions will adapt to this."
+            ></textarea>
+        </label>
+
+        <label class="full-width">
+            Key Skills (Optional)
+            <input
+                type="text"
+                name="skills_text"
+                placeholder="Example: Python, Flask, SQL, NLP, TensorFlow"
+            >
+        </label>
+
+        <button type="submit" class="btn-primary">Launch Interview</button>
+    </form>
+</section>
+
+<section class="panel compact">
+    <h3>What This MVP Scores</h3>
+    <ul class="feature-list">
+        <li>Question relevance and technical depth</li>
+        <li>Confidence proxy from answer structure + hesitation + speed</li>
+        <li>Sentiment quality (assertive vs uncertain language)</li>
+        <li>Topic-wise weakness recommendations</li>
+    </ul>
+</section>
+{% endblock %}

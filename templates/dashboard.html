@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Performance Dashboard{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="hero-card">
+        <p class="eyebrow">Session Complete</p>
+        <h1>{{ session_row["candidate_name"] }}'s Interview Analytics</h1>
+        <p class="subtitle">{{ session_row["feedback"] }}</p>
+    </div>
+</section>
+
+<section class="kpi-grid">
+    <article class="kpi-card">
+        <p>Overall Score</p>
+        <h3>{{ session_row["overall_score"] }}</h3>
+    </article>
+    <article class="kpi-card">
+        <p>Confidence Score</p>
+        <h3>{{ session_row["confidence_score"] }}</h3>
+    </article>
+    <article class="kpi-card">
+        <p>Sentiment Score</p>
+        <h3>{{ session_row["sentiment_score"] }}</h3>
+    </article>
+    <article class="kpi-card">
+        <p>Average Typing WPM</p>
+        <h3>{{ session_row["typing_score"] }}</h3>
+    </article>
+</section>
+
+<section class="panel">
+    <h2>Question-Wise Scores</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Topic</th>
+                    <th>Round</th>
+                    <th>Final</th>
+                    <th>Relevance</th>
+                    <th>Confidence</th>
+                    <th>Sentiment</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in responses %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ row["question_topic"] }}</td>
+                    <td>{{ row["round_type"] | upper }}</td>
+                    <td>{{ row["final_score"] }}</td>
+                    <td>{{ row["relevance_score"] }}</td>
+                    <td>{{ row["confidence_score"] }}</td>
+                    <td>{{ row["sentiment_score"] }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel split">
+    <div>
+        <h3>Strength Highlights</h3>
+        {% if strengths %}
+            <ul class="feature-list">
+                {% for strength in strengths %}
+                    <li>{{ strength }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No standout strengths yet. With one more practice round, these will emerge clearly.</p>
+        {% endif %}
+    </div>
+    <div>
+        <h3>Weak Topic Recommendations</h3>
+        {% if weak_topics %}
+            <ul class="feature-list">
+            {% for item in weak_topics %}
+                <li>
+                    <strong>{{ item["topic"] }}</strong> ({{ item["avg_score"] }}): {{ item["recommendation"] }}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>Great balance across topics. Keep practicing to sustain consistency.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel compact">
+    <a class="btn-primary inline-btn" href="{{ url_for('main.home') }}">Start New Mock Interview</a>
+</section>
+{% endblock %}
