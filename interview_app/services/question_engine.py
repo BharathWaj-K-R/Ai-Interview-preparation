@@ -1,6 +1,12 @@
+import logging
 import random
 import re
 from typing import Dict, List
+
+from .ai_client import AIClientError, AnthropicAIClient, extract_json_payload
+
+
+logger = logging.getLogger(__name__)
 
 
 TECHNICAL_QUESTION_BANK: Dict[str, List[str]] = {
@@ -220,7 +226,7 @@ def _resume_hr_questions(resume_text: str, skills_text: str) -> List[Dict[str, s
     return questions
 
 
-def generate_questions(
+def generate_questions_fallback(
     round_type: str,
     resume_text: str,
     count: int = 5,
@@ -273,3 +279,94 @@ def generate_questions(
         if len(unique) >= count:
             break
     return unique
+
+
+
+def _validate_llm_questions(payload: object, round_type: str, count: int) -> List[Dict[str, str]]:
+    if not isinstance(payload, list):
+        raise AIClientError("Question response must be a JSON array.")
+
+    questions: List[Dict[str, str]] = []
+    normalized_round = "hr" if round_type == "hr" else "technical"
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+
+        question = str(item.get("question", "")).strip()
+        topic = str(item.get("topic", "")).strip() or "General"
+        difficulty = str(item.get("difficulty", "")).strip() or "medium"
+        if not question:
+            continue
+
+        questions.append(
+            {
+                "topic": topic.title(),
+                "round_type": normalized_round,
+                "difficulty": difficulty.lower(),
+                "text": question,
+            }
+        )
+        if len(questions) >= count:
+            break
+
+    if not questions:
+        raise AIClientError("LLM did not return any usable questions.")
+    return questions
+
+
+def _generate_questions_with_llm(
+    round_type: str,
+    resume_text: str,
+    skills_text: str,
+    count: int,
+) -> List[Dict[str, str]]:
+    client = AnthropicAIClient()
+    if not client.available:
+        raise AIClientError("Anthropic client is unavailable.")
+
+    prompt = f"""
+Generate exactly {count} interview questions for a placement mock interview.
+
+Candidate resume text:
+{resume_text or "No resume text provided."}
+
+Explicit skills:
+{skills_text or "No explicit skills provided."}
+
+Requested round type:
+{round_type}
+
+Rules:
+- Questions must be directly related to the resume and skills whenever possible.
+- Include a mix of conceptual, project-based, and practical questions for technical rounds.
+- Include behavioral questions tied to resume experience for HR rounds.
+- Return only valid JSON, with no markdown.
+- JSON format: [{{"question": "...", "topic": "...", "difficulty": "easy|medium|hard"}}]
+"""
+    system = "You are an expert technical recruiter. Return strict JSON only."
+    raw = client.complete_text(prompt=prompt, system=system)
+    payload = extract_json_payload(raw)
+    return _validate_llm_questions(payload, round_type=round_type, count=count)
+
+
+def generate_questions(
+    round_type: str,
+    resume_text: str,
+    count: int = 5,
+    skills_text: str = "",
+) -> List[Dict[str, str]]:
+    try:
+        return _generate_questions_with_llm(
+            round_type=round_type,
+            resume_text=resume_text,
+            skills_text=skills_text,
+            count=count,
+        )
+    except Exception as exc:
+        logger.warning("Falling back to heuristic question generation: %s", exc)
+        return generate_questions_fallback(
+            round_type=round_type,
+            resume_text=resume_text,
+            skills_text=skills_text,
+            count=count,
+        )

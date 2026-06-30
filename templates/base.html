@@ -13,12 +13,32 @@
     <div class="bg-glow bg-glow-left"></div>
     <div class="bg-glow bg-glow-right"></div>
     <header class="site-header">
-        <a class="brand" href="{{ url_for('main.home') }}">
+        <a class="brand" href="{{ url_for('main.home') if current_user.is_authenticated else url_for('main.login') }}">
             <span class="brand-mark">AI</span>
             <span>Interview Preparation System</span>
         </a>
+        <nav class="site-nav">
+            {% if current_user.is_authenticated %}
+                <span>{{ current_user.email }}</span>
+                <form method="post" action="{{ url_for('main.logout') }}">
+                    <button type="submit" class="link-button">Logout</button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('main.login') }}">Login</a>
+                <a href="{{ url_for('main.register') }}">Register</a>
+            {% endif %}
+        </nav>
     </header>
     <main class="site-main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                        <p class="flash-message {{ category }}">{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 </body>

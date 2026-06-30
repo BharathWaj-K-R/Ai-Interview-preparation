@@ -59,6 +59,58 @@ body {
     backdrop-filter: blur(7px);
 }
 
+
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.site-nav a,
+.link-button,
+.auth-alt a {
+    color: var(--accent-strong);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.site-nav form {
+    margin: 0;
+}
+
+.link-button {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+}
+
+.auth-panel {
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.auth-form {
+    display: grid;
+    gap: 14px;
+}
+
+.auth-alt {
+    margin-bottom: 0;
+    color: var(--muted);
+}
+
 .brand {
     display: inline-flex;
     align-items: center;
@@ -84,6 +136,29 @@ body {
 .site-main {
     width: min(1040px, 92vw);
     margin: 28px auto 52px;
+}
+
+
+.flash-stack {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.flash-message {
+    margin: 0;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #f8fafc;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.flash-message.error {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
 }
 
 .hero {

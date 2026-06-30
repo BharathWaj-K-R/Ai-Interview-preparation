@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: interview_prep
+      POSTGRES_USER: interview_user
+      POSTGRES_PASSWORD: interview_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U interview_user -d interview_prep"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    environment:
+      SECRET_KEY: replace-this-in-production
+      DATABASE_URL: postgresql+psycopg://interview_user:interview_password@db:5432/interview_prep
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: claude-sonnet-4-6
+      MAX_QUESTIONS: 5
+      RATELIMIT_STORAGE_URI: memory://
+      FLASK_APP: app
+      AUTO_CREATE_DB: 0
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

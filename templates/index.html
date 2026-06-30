@@ -14,7 +14,7 @@
 
 <section class="panel">
     <h2>Start Interview Session</h2>
-    <form method="post" action="{{ url_for('main.start_interview') }}" class="form-grid">
+    <form method="post" action="{{ url_for('main.start_interview') }}" class="form-grid" enctype="multipart/form-data">
         <label>
             Candidate Name
             <input type="text" name="candidate_name" placeholder="Enter your name" required>
@@ -36,6 +36,11 @@
                 rows="7"
                 placeholder="Paste your resume summary, skills, projects, and experience. Questions will adapt to this."
             ></textarea>
+        </label>
+
+        <label class="full-width">
+            Resume File (Optional PDF/DOCX)
+            <input type="file" name="resume_file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
         </label>
 
         <label class="full-width">

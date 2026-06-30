@@ -8,8 +8,16 @@ from flask import current_app, g
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
     candidate_name TEXT NOT NULL,
     resume_text TEXT,
     round_type TEXT NOT NULL,
@@ -18,7 +26,8 @@ CREATE TABLE IF NOT EXISTS sessions (
     confidence_score REAL DEFAULT 0,
     sentiment_score REAL DEFAULT 0,
     typing_score REAL DEFAULT 0,
-    feedback TEXT
+    feedback TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS responses (
@@ -37,6 +46,19 @@ CREATE TABLE IF NOT EXISTS responses (
     FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE
 );
 """
+
+
+def _table_columns(connection: sqlite3.Connection, table_name: str) -> set[str]:
+    rows = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return {row[1] for row in rows}
+
+
+def _ensure_schema(connection: sqlite3.Connection) -> None:
+    connection.executescript(SCHEMA_SQL)
+    session_columns = _table_columns(connection, "sessions")
+    if "user_id" not in session_columns:
+        connection.execute("ALTER TABLE sessions ADD COLUMN user_id INTEGER")
+    connection.commit()
 
 
 FALLBACK_MEMORY_URI = "file:interview-prep-fallback?mode=memory&cache=shared"
@@ -69,8 +91,7 @@ def _fallback_memory_connection() -> sqlite3.Connection:
             uri=True,
             check_same_thread=False,
         )
-        _memory_keeper.executescript(SCHEMA_SQL)
-        _memory_keeper.commit()
+        _ensure_schema(_memory_keeper)
 
     return _memory_keeper
 
@@ -93,8 +114,7 @@ def get_db() -> sqlite3.Connection:
 
         if db_mode == "file":
             try:
-                connection.executescript(SCHEMA_SQL)
-                connection.commit()
+                _ensure_schema(connection)
             except sqlite3.OperationalError:
                 connection.close()
                 connection = _fallback_memory_connection()
@@ -116,13 +136,11 @@ def init_db(app: Any) -> None:
     with app.app_context():
         db = get_db()
         try:
-            db.executescript(SCHEMA_SQL)
-            db.commit()
+            _ensure_schema(db)
         except sqlite3.OperationalError:
             # Fallback for environments where filesystem locking blocks SQLite writes.
             if g.pop("db_mode", None) == "file":
                 db.close()
             g.db = _fallback_memory_connection()
             g.db_mode = "memory"
-            g.db.executescript(SCHEMA_SQL)
-            g.db.commit()
+            _ensure_schema(g.db)

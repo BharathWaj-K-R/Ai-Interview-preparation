@@ -1,83 +1,114 @@
 # AI-Based Interview Preparation System
 
-An intelligent Flask web app that helps students prepare for placements through AI-powered mock interviews.
+A production-ready Flask application for placement interview practice. Users register, upload or paste a resume, enter key skills, complete technical/HR mock interviews, and receive AI-backed scoring plus weak-topic recommendations.
 
-## What It Does
+## Features
 
-- Generates interview questions for `Technical`, `HR`, or mixed rounds
-- Adapts technical questions using resume text
-- Supports text answers and browser voice-to-text input
-- Scores each answer for relevance, confidence, sentiment, and technical depth
-- Tracks typing speed and includes it in confidence analysis
-- Produces a dashboard with topic-wise weak-area recommendations
+- Anthropic LLM integration for resume and skills-based question generation
+- LLM answer evaluation with heuristic fallback when no API key is configured
+- PDF and DOCX resume parsing
+- Flask-Login authentication with user-scoped interview sessions
+- SQLAlchemy models with SQLite for development and PostgreSQL for production
+- Alembic/Flask-Migrate database migrations
+- Flask-Limiter protection on LLM-costly routes
+- Docker and docker-compose deployment setup
+- GitHub Actions CI running the unittest suite
 
-## Tech Stack
-
-- Python
-- Flask
-- NLP (sentiment + keyword analysis)
-- SQLite
-- HTML/CSS/JavaScript
-
-## Project Structure
+## Architecture
 
 ```text
-.
-├── app.py
-├── interview_app
-│   ├── __init__.py
-│   ├── db.py
-│   ├── routes.py
-│   └── services
-│       ├── question_engine.py
-│       ├── scoring.py
-│       └── recommendations.py
-├── static
-│   ├── css/style.css
-│   └── js/interview.js
-├── templates
-│   ├── base.html
-│   ├── index.html
-│   ├── interview.html
-│   └── dashboard.html
-└── tests/test_scoring.py
+Browser
+  -> Flask routes
+      -> Auth layer (Flask-Login)
+      -> Rate limiter (Flask-Limiter)
+      -> Resume parser (pdfplumber / python-docx)
+      -> Question engine
+          -> Anthropic API
+          -> Heuristic fallback
+      -> Scoring engine
+          -> Anthropic API
+          -> Heuristic fallback
+      -> SQLAlchemy models
+          -> SQLite in dev
+          -> PostgreSQL in prod
+      -> Dashboard templates
 ```
 
-## Quick Start
-
-1. Create and activate a virtual environment
-2. Install dependencies
-3. Run the app
+## Local Setup
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+flask db upgrade
 python app.py
 ```
 
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
+Open `http://127.0.0.1:5000`.
 
-## How Scoring Works (MVP)
+## Environment
 
-- `Relevance`: overlap of question keywords with answer keywords
-- `Confidence`: answer structure + typing speed - hesitation phrases
-- `Sentiment`: VADER sentiment polarity mapped to 0-100
-- `Technical Depth`: domain term usage for technical rounds
+Configure `.env` from `.env.example`.
 
-Final score is a weighted combination of these metrics.
+```text
+SECRET_KEY=replace-with-a-long-random-secret
+DATABASE_URL=sqlite:///instance/interview.sqlite3
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-6
+MAX_QUESTIONS=5
+MAX_CONTENT_LENGTH=5242880
+RATELIMIT_STORAGE_URI=memory://
+AUTO_CREATE_DB=0
+```
 
-## Why This Is Placement-Strong
+## Running With Or Without Anthropic
 
-- Aligns tightly with AI/Data Science and software interview workflows
-- Demonstrates applied NLP + full-stack web engineering
-- Easy to explain architecture, model logic, and measurable outcomes
-- Includes clear path to extend into production-grade systems
+With an API key:
 
-## Suggested Next Upgrades
+```powershell
+$env:ANTHROPIC_API_KEY="your-key"
+python app.py
+```
 
-- Add user authentication and profile history
-- Store resume uploads as PDF and parse with OCR/NLP
-- Replace heuristic scoring with trained ML models (Scikit-learn/TensorFlow)
-- Add webcam-based confidence and emotion tracking
-- Build recruiter/admin analytics views
+Without an API key, the app still runs. It logs a warning and automatically uses the local fallback question generator and answer evaluator.
+
+## Docker
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+The web app runs on `http://127.0.0.1:8000`, backed by PostgreSQL 16. The container runs `flask db upgrade` before starting gunicorn.
+
+## Database Migrations
+
+Create or upgrade the database schema:
+
+```powershell
+flask db upgrade
+```
+
+Create a new migration after model changes:
+
+```powershell
+flask db migrate -m "describe change"
+flask db upgrade
+```
+
+## Tests
+
+```powershell
+python -m unittest discover -s tests
+```
+
+The test suite mocks Anthropic calls, verifies fallback scoring/question generation, checks authentication and authorization, and parses sample PDF/DOCX resume fixtures.
+
+## Interview Talking Points
+
+- The app is LLM-first but resilient: missing API keys or malformed LLM responses fall back to deterministic heuristics.
+- User data is isolated with `user_id` ownership checks and `403` protection for cross-user access.
+- SQLite keeps local development easy, while `DATABASE_URL` enables PostgreSQL in production.
+- Rate limits protect expensive LLM routes from abuse.
+- CI ensures tests run on every push and pull request.

@@ -1,6 +1,12 @@
+import logging
 import math
 import re
 from typing import Dict, List
+
+from .ai_client import AIClientError, AnthropicAIClient, coerce_score, extract_json_payload, require_keys
+
+
+logger = logging.getLogger(__name__)
 
 try:
     from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
@@ -222,7 +228,7 @@ def build_feedback(metrics: Dict[str, float], round_type: str) -> str:
     return " ".join(feedback)
 
 
-def evaluate_response(
+def evaluate_answer_fallback(
     question: str,
     answer: str,
     typing_wpm: float,
@@ -257,3 +263,74 @@ def evaluate_response(
     }
     result["feedback"] = build_feedback(result, round_type)
     return result
+
+
+
+def _evaluate_answer_with_llm(
+    question: str,
+    answer: str,
+    typing_wpm: float,
+    round_type: str,
+) -> Dict[str, float | str]:
+    client = AnthropicAIClient()
+    if not client.available:
+        raise AIClientError("Anthropic client is unavailable.")
+
+    prompt = f"""
+Evaluate this mock interview answer.
+
+Round type: {round_type}
+Typing speed: {typing_wpm} WPM
+
+Question:
+{question}
+
+Candidate answer:
+{answer}
+
+Return only valid JSON with these keys:
+{{"relevance": 0-100, "technical_depth": 0-100, "confidence": 0-100, "sentiment": 0-100, "score": 0-100, "feedback": "short actionable feedback"}}
+"""
+    system = "You are a precise interview evaluator. Return strict JSON only."
+    raw = client.complete_text(prompt=prompt, system=system)
+    payload = extract_json_payload(raw)
+    if not isinstance(payload, dict):
+        raise AIClientError("Scoring response must be a JSON object.")
+    require_keys(payload, ["relevance", "technical_depth", "confidence", "sentiment", "score", "feedback"])
+
+    return {
+        "sentiment_score": round(coerce_score(payload.get("sentiment")), 2),
+        "relevance_score": round(coerce_score(payload.get("relevance")), 2),
+        "confidence_score": round(coerce_score(payload.get("confidence")), 2),
+        "technical_depth_score": round(coerce_score(payload.get("technical_depth")), 2),
+        "typing_score": round(compute_typing_score(typing_wpm), 2),
+        "final_score": round(coerce_score(payload.get("score")), 2),
+        "feedback": str(payload.get("feedback", "")).strip() or "Keep answers specific, structured, and relevant.",
+    }
+
+
+def evaluate_answer(
+    question: str,
+    answer: str,
+    typing_wpm: float,
+    round_type: str,
+) -> Dict[str, float | str]:
+    try:
+        return _evaluate_answer_with_llm(
+            question=question,
+            answer=answer,
+            typing_wpm=typing_wpm,
+            round_type=round_type,
+        )
+    except Exception as exc:
+        logger.warning("Falling back to heuristic answer evaluation: %s", exc)
+        return evaluate_answer_fallback(
+            question=question,
+            answer=answer,
+            typing_wpm=typing_wpm,
+            round_type=round_type,
+        )
+
+
+# Backward-compatible name used by the existing Flask routes and tests.
+evaluate_response = evaluate_answer
