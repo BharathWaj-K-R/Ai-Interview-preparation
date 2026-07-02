@@ -1,12 +1,15 @@
 # render.yaml — Render Blueprint for AI-Based Interview Preparation System
 # Docs: https://render.com/docs/blueprint-spec
+# 100% Free Tier — Web service (free) + PostgreSQL (free, expires after 90 days)
 
 services:
   - type: web
     name: interview-prep-web
     runtime: python
+    plan: free
     buildCommand: "./build.sh"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT app:app"
+    # Migrations run here at start, after the DB is ready
+    startCommand: "flask db upgrade && gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app"
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -26,8 +29,8 @@ services:
         value: memory://
       - key: AUTO_CREATE_DB
         value: "0"
-      # Add ONE of the following API keys — the app auto-detects which one to use.
-      # Groq (free tier recommended): https://console.groq.com
+      # ── Add ONE of the free API keys below ──────────────────────────────────
+      # Groq (free tier, fastest): https://console.groq.com
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
@@ -37,11 +40,6 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: "gemini-1.5-flash"
-      # Anthropic (paid): https://console.anthropic.com
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: ANTHROPIC_MODEL
-        value: "claude-sonnet-4-6"
 
 databases:
   - name: interview-prep-db
