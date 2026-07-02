@@ -9,8 +9,16 @@ load_dotenv()
 class Config:
     BASE_DIR = Path(__file__).resolve().parent
     SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
-    DATABASE_URL = os.getenv("DATABASE_URL")
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL or f"sqlite:///{(BASE_DIR / 'instance' / 'interview.sqlite3').as_posix()}"
+    # Render (and many hosts) provide DATABASE_URL as postgres:// or postgresql://
+    # which SQLAlchemy routes to the old psycopg2 driver.
+    # We use psycopg3 (psycopg[binary]), so rewrite the scheme here.
+    _raw_db_url = os.getenv("DATABASE_URL", "")
+    if _raw_db_url.startswith("postgres://"):
+        _raw_db_url = _raw_db_url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif _raw_db_url.startswith("postgresql://"):
+        _raw_db_url = _raw_db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    DATABASE_URL = _raw_db_url or None
+    SQLALCHEMY_DATABASE_URI = _raw_db_url or f"sqlite:///{(BASE_DIR / 'instance' / 'interview.sqlite3').as_posix()}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
