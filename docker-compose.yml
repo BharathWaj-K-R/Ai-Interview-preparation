@@ -20,9 +20,13 @@ services:
     environment:
       SECRET_KEY: replace-this-in-production
       DATABASE_URL: postgresql+psycopg://interview_user:interview_password@db:5432/interview_prep
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: claude-sonnet-4-6
-      MAX_QUESTIONS: 5
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      MAX_QUESTIONS: 20
       RATELIMIT_STORAGE_URI: memory://
       FLASK_APP: app
       AUTO_CREATE_DB: 0

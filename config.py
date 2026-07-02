@@ -12,8 +12,12 @@ class Config:
     DATABASE_URL = os.getenv("DATABASE_URL")
     SQLALCHEMY_DATABASE_URI = DATABASE_URL or f"sqlite:///{(BASE_DIR / 'instance' / 'interview.sqlite3').as_posix()}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-    ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+    ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
     MAX_QUESTIONS = int(os.getenv("MAX_QUESTIONS", "5"))
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(5 * 1024 * 1024)))
     RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")

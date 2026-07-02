@@ -26,6 +26,21 @@ class TestAIClient(unittest.TestCase):
         self.assertEqual(call_kwargs["model"], "claude-sonnet-4-6")
         self.assertEqual(call_kwargs["messages"][0]["role"], "user")
 
+    @patch("urllib.request.urlopen")
+    def test_complete_text_calls_gemini_api(self, urlopen_mock):
+        mock_response = Mock()
+        mock_response.read.return_value = b'{"candidates": [{"content": {"parts": [{"text": "Gemini response text"}]}}]}'
+        urlopen_mock.return_value.__enter__.return_value = mock_response
+
+        client = AnthropicAIClient(api_key="gemini-key", model="gemini-1.5-flash", provider="gemini")
+        result = client.complete_text("prompt", system="system")
+
+        self.assertEqual(result, "Gemini response text")
+        urlopen_mock.assert_called_once()
+        req_arg = urlopen_mock.call_args[0][0]
+        self.assertEqual(req_arg.full_url, "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=gemini-key")
+        self.assertEqual(req_arg.get_header("Content-type"), "application/json")
+
 
 if __name__ == "__main__":
     unittest.main()
