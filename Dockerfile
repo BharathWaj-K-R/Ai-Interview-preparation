@@ -16,4 +16,5 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "flask db upgrade && gunicorn --bind 0.0.0.0:8000 app:app"]
+CMD ["sh", "-c", "flask db upgrade && gunicorn --bind 0.0.0.0:${PORT:-8000} app:app"]
+
