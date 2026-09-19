@@ -1,0 +1,48 @@
+# render.yaml — Render Blueprint for AI-Based Interview Preparation System
+# Docs: https://render.com/docs/blueprint-spec
+# 100% Free Tier — Web service (free) + PostgreSQL (free, expires after 90 days)
+
+services:
+  - type: web
+    name: interview-prep-web
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    # Migrations run here at start, after the DB is ready
+    startCommand: "flask db upgrade && gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: interview-prep-db
+          property: connectionString
+      - key: FLASK_APP
+        value: app
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: MAX_QUESTIONS
+        value: "5"
+      - key: MAX_CONTENT_LENGTH
+        value: "5242880"
+      - key: RATELIMIT_STORAGE_URI
+        value: memory://
+      - key: AUTO_CREATE_DB
+        value: "0"
+      # ── Add ONE of the free API keys below ──────────────────────────────────
+      # Groq (free tier, fastest): https://console.groq.com
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: "llama-3.3-70b-versatile"
+      # Google Gemini (free tier): https://aistudio.google.com
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: "gemini-1.5-flash"
+
+databases:
+  - name: interview-prep-db
+    databaseName: interview_prep
+    user: interview_user
+    plan: free
